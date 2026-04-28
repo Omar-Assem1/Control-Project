@@ -61,6 +61,19 @@ class LoopFinder:
         found_signatures: set[frozenset] = set()
         loops: list[dict] = []
 
+        # Detect self-loops first (node → itself)
+        for node in nodes:
+            if node in adj.get(node, {}):
+                sig = frozenset([node])
+                if sig not in found_signatures:
+                    found_signatures.add(sig)
+                    gain = adj[node][node]
+                    loops.append({
+                        "nodes"    : [node, node],
+                        "gain"     : gain,
+                        "gain_str" : str(sp.simplify(gain)),
+                    })
+
         for start in nodes:
             self._dfs_cycles(start, start, [start], sp.Integer(1), adj, found_signatures, loops)
 

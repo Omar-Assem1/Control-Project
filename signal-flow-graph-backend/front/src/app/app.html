@@ -1,0 +1,386 @@
+<div class="shell">
+
+  <!-- HEADER -->
+  <header class="app-header">
+    <div class="logo">
+      <svg width="26" height="26" viewBox="0 0 32 32" fill="none">
+        <circle cx="5"  cy="16" r="4" fill="#818cf8"/><circle cx="16" cy="5"  r="4" fill="#818cf8"/>
+        <circle cx="27" cy="16" r="4" fill="#818cf8"/><circle cx="16" cy="27" r="4" fill="#34d399"/>
+        <line x1="5" y1="16" x2="16" y2="5"  stroke="#818cf8" stroke-width="1.5"/>
+        <line x1="16" y1="5" x2="27" y2="16" stroke="#818cf8" stroke-width="1.5"/>
+        <line x1="27" y1="16" x2="16" y2="27" stroke="#34d399" stroke-width="1.5"/>
+      </svg>
+      <div class="logo-text">
+        <span class="logo-title">SFG Analyzer</span>
+        <span class="logo-sub">Mason's Gain Formula</span>
+      </div>
+    </div>
+
+    <div class="header-center">
+      @if (loading()) {
+        <div class="status-badge loading-badge"><span class="spinner"></span>Analyzing…</div>
+      } @else if (result()) {
+        <div class="status-badge success-badge">
+          <span class="dot green"></span>
+          T(s) = <code>{{ result()!.transfer_function }}</code>
+        </div>
+      } @else if (errorMsg()) {
+        <div class="status-badge error-badge"><span class="dot red"></span>{{ errorMsg() }}</div>
+      }
+    </div>
+
+    <div class="header-right">
+      <button class="btn btn-ghost" (click)="resetAll()" id="resetBtn">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>
+        </svg>
+        Reset
+      </button>
+    </div>
+  </header>
+
+  <!-- BODY -->
+  <div class="body-layout">
+
+    <!-- LEFT PANEL -->
+    <aside class="panel panel-left">
+      <div class="panel-header">
+        <h2 class="panel-title">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+          Graph Builder
+        </h2>
+      </div>
+      <div class="panel-body">
+
+        <!-- Source / Sink -->
+        <div class="field-row">
+          <div class="field-group">
+            <label class="field-label"><span class="tag tag-green">IN</span> Source</label>
+            <select class="field-select" [ngModel]="sourceId()" (ngModelChange)="sourceId.set($event ? +$event : null)" id="sourceSelect">
+              <option [value]="null">— select —</option>
+              @for (n of canvasNodes(); track n.id) {
+                <option [value]="n.id">{{ n.label }}</option>
+              }
+            </select>
+          </div>
+          <div class="field-group">
+            <label class="field-label"><span class="tag tag-orange">OUT</span> Sink</label>
+            <select class="field-select" [ngModel]="sinkId()" (ngModelChange)="sinkId.set($event ? +$event : null)" id="sinkSelect">
+              <option [value]="null">— select —</option>
+              @for (n of canvasNodes(); track n.id) {
+                <option [value]="n.id">{{ n.label }}</option>
+              }
+            </select>
+          </div>
+        </div>
+
+        <!-- Node list -->
+        <div class="list-section">
+          <div class="list-header">
+            <span class="list-title">Nodes <span class="badge-count">{{ canvasNodes().length }}</span></span>
+          </div>
+          @if (canvasNodes().length === 0) {
+            <p class="list-empty">Click the <strong>Node</strong> button on the canvas toolbar, then click to place nodes.</p>
+          }
+          <div class="node-list">
+            @for (n of canvasNodes(); track n.id) {
+              <div class="list-row">
+                <span class="node-chip" [class.chip-green]="n.id === sourceId()" [class.chip-orange]="n.id === sinkId()">{{ n.label }}</span>
+                <span class="row-coord">{{ n.x | number:'1.0-0' }}, {{ n.y | number:'1.0-0' }}</span>
+                <button class="btn-icon" (click)="removeNode(n.id)" title="Remove node" [attr.aria-label]="'Remove ' + n.label">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Edge list -->
+        <div class="list-section">
+          <div class="list-header">
+            <span class="list-title">Edges <span class="badge-count">{{ canvasEdges().length }}</span></span>
+          </div>
+          @if (canvasEdges().length === 0) {
+            <p class="list-empty">Click the <strong>Edge</strong> button, then click two nodes to connect them.</p>
+          }
+          <div class="edge-list">
+            @for (e of canvasEdges(); track e.id) {
+              <div class="list-row edge-row">
+                <span class="edge-label">{{ nodeLabelById(e.from) }} → {{ nodeLabelById(e.to) }}</span>
+                <input
+                  class="gain-input-sm"
+                  type="text"
+                  [value]="e.gain"
+                  (change)="updateEdgeGain(e.id, $any($event.target).value)"
+                  placeholder="gain"
+                  [attr.aria-label]="'Gain for edge ' + nodeLabelById(e.from) + ' to ' + nodeLabelById(e.to)"
+                />
+                <button class="btn-icon" (click)="removeEdge(e.id)" title="Remove edge">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Analyze -->
+        <button id="analyzeBtn" class="btn btn-primary btn-full" (click)="analyze()" [disabled]="loading()">
+          @if (loading()) {
+            <span class="spinner spinner-sm"></span>Analyzing…
+          } @else {
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Analyze Graph
+          }
+        </button>
+
+        @if (errorMsg()) {
+          <div class="error-card">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            {{ errorMsg() }}
+          </div>
+        }
+      </div>
+    </aside>
+
+    <!-- CENTER CANVAS -->
+    <main class="panel panel-canvas">
+      <div class="panel-header canvas-header">
+        <h2 class="panel-title">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          Signal Flow Graph
+        </h2>
+
+        <!-- Toolbar -->
+        <div class="toolbar" role="toolbar" aria-label="Drawing tools">
+          <button
+            id="addNodeBtn"
+            class="tool-btn" [class.active]="mode() === 'addNode'"
+            (click)="setMode('addNode')"
+            title="Add Node (click on canvas)"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+            Node
+          </button>
+          <button
+            id="addEdgeBtn"
+            class="tool-btn" [class.active]="mode() === 'addEdge'"
+            (click)="setMode('addEdge')"
+            title="Add Edge (click two nodes)"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            Edge
+          </button>
+          <button
+            id="deleteModeBtn"
+            class="tool-btn danger" [class.active]="mode() === 'delete'"
+            (click)="setMode('delete')"
+            title="Delete (click node or edge)"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+            Delete
+          </button>
+          <div class="toolbar-divider"></div>
+          <button id="undoBtn" class="tool-btn ghost" (click)="undoLast()" title="Undo last action">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M3 13A9 9 0 1 0 6 6.7L3 7"/></svg>
+            Undo
+          </button>
+          <button id="clearBtn" class="tool-btn ghost" (click)="clearCanvas()" title="Clear all">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></svg>
+            Clear
+          </button>
+        </div>
+
+        @if (result()) {
+          <div class="meta-chips">
+            <span class="meta-chip">{{ result()!.graph_summary.nodes.length }} nodes</span>
+            <span class="meta-chip">{{ result()!.forward_paths.length }} paths</span>
+          </div>
+        }
+      </div>
+
+      <div class="canvas-wrapper" [class.cursor-crosshair]="mode()==='addNode'" [class.cursor-pointer]="mode()==='addEdge' || mode()==='delete'">
+        <canvas
+          #sfgCanvas
+          class="sfg-canvas"
+          (click)="onCanvasClick($event)"
+          (mousemove)="onMouseMove($event)"
+          (mouseleave)="onMouseLeave()"
+        ></canvas>
+
+        <!-- Gain prompt overlay -->
+        @if (pendingEdge()) {
+          <div class="gain-prompt" [style.left.px]="gainPromptPos().x" [style.top.px]="gainPromptPos().y" id="gainPrompt">
+            <div class="gp-title">
+              Edge: <strong>{{ pendingEdge()!.from.label }}</strong> → <strong>{{ pendingEdge()!.to.label }}</strong>
+            </div>
+            <div class="gp-row">
+              <input
+                #gainInput
+                id="gainInput"
+                class="gp-input"
+                type="text"
+                [(ngModel)]="pendingGain"
+                (keyup.enter)="confirmEdge()"
+                (keyup.escape)="cancelEdge()"
+                placeholder="gain (e.g. a, 1/s)"
+                autofocus
+              />
+              <button class="btn btn-primary btn-xs" (click)="confirmEdge()" id="confirmEdgeBtn">Add</button>
+              <button class="btn btn-ghost btn-xs" (click)="cancelEdge()">✕</button>
+            </div>
+          </div>
+        }
+
+        <!-- Mode hint bar -->
+        @if (mode() !== 'idle') {
+          <div class="mode-hint" id="modeHint">
+            @if (mode() === 'addNode') { 🖱 Click anywhere on the canvas to place a new node }
+            @if (mode() === 'addEdge' && !selectedNodeId()) { 🖱 Click a node to start drawing an edge }
+            @if (mode() === 'addEdge' && selectedNodeId()) { 🖱 Now click another node to complete the edge }
+            @if (mode() === 'delete') { 🖱 Click a node or edge midpoint to delete it }
+          </div>
+        }
+      </div>
+    </main>
+
+    <!-- RIGHT PANEL: results -->
+    <aside class="panel panel-results">
+      <div class="panel-header">
+        <h2 class="panel-title">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Analysis Results
+        </h2>
+        @if (result()) {
+          <button class="btn btn-ghost btn-xs" (click)="showJson.set(!showJson())" id="toggleJsonBtn">
+            {{ showJson() ? 'Hide JSON' : 'JSON' }}
+          </button>
+        }
+      </div>
+
+      <div class="panel-body results-body">
+        @if (!result() && !loading()) {
+          <div class="empty-state">
+            <div class="empty-icon">
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            </div>
+            <p class="empty-title">No results yet</p>
+            <p class="empty-sub">Build your graph on the canvas, then click Analyze.</p>
+          </div>
+        }
+
+        @if (loading()) {
+          <div class="skeleton-list">
+            @for (i of [1,2,3,4]; track i) {
+              <div class="skeleton-item"><div class="skeleton-line wide"></div><div class="skeleton-line narrow"></div></div>
+            }
+          </div>
+        }
+
+        @if (result() && !showJson()) {
+          <!-- Transfer function card -->
+          <div class="tf-card" id="tfCard">
+            <div class="tf-label">Transfer Function T(s)</div>
+            <div class="tf-value">{{ result()!.transfer_function }}</div>
+            <div class="tf-delta">Δ = {{ result()!.delta }}</div>
+          </div>
+
+          <!-- Tabs -->
+          <div class="tabs">
+            <button class="tab" [class.active]="activeTab()==='paths'" (click)="setTab('paths')" id="tabPaths">
+              Paths <span class="tab-count">{{ forwardPaths().length }}</span>
+            </button>
+            <button class="tab" [class.active]="activeTab()==='loops'" (click)="setTab('loops')" id="tabLoops">
+              Loops <span class="tab-count">{{ loops().length }}</span>
+            </button>
+            <button class="tab" [class.active]="activeTab()==='delta'" (click)="setTab('delta')" id="tabDelta">
+              Δₖ <span class="tab-count">{{ deltaK().length }}</span>
+            </button>
+            <button class="tab" [class.active]="activeTab()==='result'" (click)="setTab('result')" id="tabResult">
+              Details
+            </button>
+          </div>
+
+          <div class="tab-content">
+            @if (activeTab() === 'paths') {
+              <div class="results-list">
+                @for (p of forwardPaths(); track p.index) {
+                  <div class="result-card">
+                    <div class="rc-header"><span class="rc-index">P<sub>{{p.index}}</sub></span><span class="rc-gain">{{p.gain}}</span></div>
+                    <div class="node-path">
+                      @for (n of p.nodes; track $index) {
+                        <span class="node-chip-sm">{{n}}</span>
+                        @if ($index < p.nodes.length - 1) { <span class="path-arr">→</span> }
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+            @if (activeTab() === 'loops') {
+              <div class="results-list">
+                @for (l of loops(); track l.index) {
+                  <div class="result-card loop-card">
+                    <div class="rc-header"><span class="rc-index loop-idx">L<sub>{{l.index}}</sub></span><span class="rc-gain loop-gain">{{l.gain}}</span></div>
+                    <div class="node-path">
+                      @for (n of l.nodes; track $index) {
+                        <span class="node-chip-sm loop-chip">{{n}}</span>
+                        @if ($index < l.nodes.length - 1) { <span class="path-arr">⟳</span> }
+                      }
+                    </div>
+                  </div>
+                }
+                @if (nonTouching().length > 0) {
+                  <div class="nt-section">
+                    <div class="nt-title">Non-Touching Groups</div>
+                    @for (g of nonTouching(); track $index) {
+                      <div class="nt-card">
+                        <span class="nt-size">Size {{g.size}}</span>
+                        <span class="nt-gain">{{g.gain}}</span>
+                        <div class="nt-loops">{{ loopLabel(g.loop_indices) }}</div>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            }
+            @if (activeTab() === 'delta') {
+              <div class="results-list">
+                <div class="delta-main-card">
+                  <div class="delta-main-label">Graph Determinant Δ</div>
+                  <div class="delta-main-val">{{ result()!.delta }}</div>
+                </div>
+                @for (dk of deltaK(); track dk.path_index) {
+                  <div class="result-card">
+                    <div class="rc-header"><span class="rc-index">Δ<sub>{{dk.path_index}}</sub></span><span class="rc-gain">{{dk.value}}</span></div>
+                    <div class="delta-latex"><code>{{dk.latex}}</code></div>
+                  </div>
+                }
+              </div>
+            }
+            @if (activeTab() === 'result') {
+              <div class="results-list">
+                <div class="detail-block"><div class="detail-lbl">LaTeX T(s)</div><code class="detail-code">{{result()!.transfer_function_latex}}</code></div>
+                <div class="detail-block"><div class="detail-lbl">LaTeX Δ</div><code class="detail-code">{{result()!.delta_latex}}</code></div>
+                <div class="detail-block">
+                  <div class="detail-lbl">Branch Summary</div>
+                  <table class="summary-table">
+                    <thead><tr><th>From</th><th>To</th><th>Gain</th></tr></thead>
+                    <tbody>
+                      @for (b of result()!.graph_summary.branches; track $index) {
+                        <tr><td>{{b.from}}</td><td>{{b.to}}</td><td><code>{{b.gain}}</code></td></tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            }
+          </div>
+        }
+
+        @if (result() && showJson()) {
+          <div class="json-view" id="jsonView"><pre>{{ jsonPreview() }}</pre></div>
+        }
+      </div>
+    </aside>
+  </div>
+</div>

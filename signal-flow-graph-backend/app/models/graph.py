@@ -194,10 +194,10 @@ class GraphAnalysisResult(BaseModel):
     transfer_function_latex: str = Field(..., description="T(s) in LaTeX.")
 
     # ── layout ────────────────────────────────────────────────────────────
-    layout: GraphLayout = Field(
-        ...,
-        description="Node coordinates and edge metadata for canvas rendering.",
-    )
+    #layout: GraphLayout = Field(
+    #    ...,
+    #   description="Node coordinates and edge metadata for canvas rendering.",
+    #)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

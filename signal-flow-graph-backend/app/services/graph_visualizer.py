@@ -114,8 +114,9 @@ class GraphVisualizer:
                 u_layer = layer.get(u, 0)
                 v_layer = layer.get(v, 0)
                 is_back = (not is_self) and (v_layer <= u_layer)
+                is_long_forward = (not is_self) and (v_layer - u_layer > 1)
 
-                cx, cy = self._control_point(pos, u, v, is_self, is_back)
+                cx, cy = self._control_point(pos, u, v, is_self, is_back, is_long_forward)
 
                 edge_list.append(
                     {
@@ -169,12 +170,13 @@ class GraphVisualizer:
         v: Any,
         is_self: bool,
         is_back: bool,
+        is_long_forward: bool = False
     ) -> tuple[float | None, float | None]:
         """
         Compute a quadratic bezier control point for curved edges.
         Straight forward edges don't need one (returns None, None).
         """
-        if not (is_self or is_back):
+        if not (is_self or is_back or is_long_forward):
             return None, None   # straight arrow
 
         ux, uy = pos.get(u, (0, 0))
@@ -186,6 +188,10 @@ class GraphVisualizer:
 
         # Back edge → arc curving above the straight line
         mid_x = (ux + vx) / 2
-        mid_y = (uy + vy) / 2 - 80   # lift the arc upward
+
+        if is_back:
+            mid_y = (uy + vy) / 2 - 80   # lift the arc upward
+        else:
+            mid_y = (uy + vy) / 2 + 80
 
         return round(mid_x, 2), round(mid_y, 2)

@@ -202,7 +202,8 @@
         <canvas
           #sfgCanvas
           class="sfg-canvas"
-          (click)="onCanvasClick($event)"
+          (mousedown)="onMouseDown($event)"
+          (mouseup)="onMouseUp($event)"
           (mousemove)="onMouseMove($event)"
           (mouseleave)="onMouseLeave()"
         ></canvas>
@@ -359,8 +360,14 @@
             }
             @if (activeTab() === 'result') {
               <div class="results-list">
-                <div class="detail-block"><div class="detail-lbl">LaTeX T(s)</div><code class="detail-code">{{result()!.transfer_function_latex}}</code></div>
-                <div class="detail-block"><div class="detail-lbl">LaTeX Δ</div><code class="detail-code">{{result()!.delta_latex}}</code></div>
+                <div class="detail-block">
+                  <div class="detail-lbl">Transfer Function T(s)</div>
+                  <div class="math-display">$$ {{result()!.transfer_function_latex}} $$</div>
+                </div>
+                <div class="detail-block">
+                  <div class="detail-lbl">Determinant Δ</div>
+                  <div class="math-display">$$ {{result()!.delta_latex}} $$</div>
+                </div>
                 <div class="detail-block">
                   <div class="detail-lbl">Branch Summary</div>
                   <table class="summary-table">

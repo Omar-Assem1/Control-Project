@@ -1,17 +1,3 @@
-"""
-graph_builder.py
-----------------
-Converts a flat list of nodes and branches into an internal adjacency
-representation used by all other services.
-
-Adjacency structure (nested dict):
-    graph[from_node][to_node] = gain   (as a sympy Expr or float)
-
-Example:
-    nodes  = [1, 2, 3, 4]
-    branches = [(1,2,2), (2,3,-1), (3,2,0.5), (3,4,3)]
-    →  graph = {1: {2: 2}, 2: {3: -1}, 3: {2: 0.5, 4: 3}}
-"""
 
 from __future__ import annotations
 from typing import Any
@@ -43,16 +29,7 @@ def _to_sympy(value: Any) -> sp.Expr:
 # ── main class ────────────────────────────────────────────────────────────────
 
 class GraphBuilder:
-    """
-    Builds and validates the signal-flow graph.
 
-    Parameters
-    ----------
-    nodes    : list of node identifiers (any hashable – int, str, …)
-    branches : list of (from_node, to_node, gain) triples
-    source   : source node  (input)
-    sink     : sink node    (output)
-    """
 
     def __init__(
         self,

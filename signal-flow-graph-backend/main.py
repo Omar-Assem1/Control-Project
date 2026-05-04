@@ -1,11 +1,4 @@
-"""
-main.py
--------
-Entry point for the Signal Flow Graph Analyzer API.
 
-Run with:
-    uvicorn main:app --reload --port 8000
-"""
 
 from app import app  # noqa: F401  – re-exported so uvicorn can find it
 

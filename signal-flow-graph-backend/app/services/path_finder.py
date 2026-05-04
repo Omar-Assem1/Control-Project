@@ -1,18 +1,4 @@
-"""
-path_finder.py
---------------
-Finds ALL forward paths from source to sink using iterative DFS.
 
-A *forward path* is any path that visits each node at most once and
-travels from the source node to the sink node following branch directions.
-
-Result for each path:
-    {
-        "nodes" : [n1, n2, …, nk],          # ordered node list
-        "gain"  : sympy expression,          # product of branch gains
-        "gain_str": "...",                   # human-readable string
-    }
-"""
 
 from __future__ import annotations
 from typing import Any
@@ -22,14 +8,7 @@ from .graph_builder import GraphBuilder
 
 
 class PathFinder:
-    """
-    Enumerates all forward paths in a Signal Flow Graph.
 
-    Parameters
-    ----------
-    builder : GraphBuilder
-        A fully-constructed graph.
-    """
 
     def __init__(self, builder: GraphBuilder) -> None:
         self.builder = builder

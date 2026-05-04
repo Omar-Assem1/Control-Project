@@ -1,38 +1,4 @@
-"""
-graph_visualizer.py
---------------------
-Computes (x, y) layout coordinates for every node so the Angular front-end
-can render the Signal Flow Graph on a canvas / SVG without needing an
-external graph-layout library on the client side.
 
-Strategy  (left-to-right layered layout)
------------------------------------------
-1. BFS from the source node assigns each node a *column* (layer).
-2. Within each column, nodes are distributed evenly on the y-axis.
-3. A simple loop-back arc is added for self-loops or back-edges.
-
-The returned payload is intentionally plain JSON (no sympy objects).
-
-Output schema
--------------
-{
-    "nodes": [
-        {"id": <node>, "x": float, "y": float, "label": str},
-        ...
-    ],
-    "edges": [
-        {
-            "from": <node>, "to": <node>,
-            "gain": str,
-            "is_self_loop": bool,
-            "is_back_edge": bool,
-            "control_x": float | None,   # for quadratic bezier curves
-            "control_y": float | None,
-        },
-        ...
-    ],
-}
-"""
 
 from __future__ import annotations
 from collections import defaultdict, deque
@@ -50,13 +16,7 @@ V_MARGIN      = 80      # px  – top / bottom padding
 
 
 class GraphVisualizer:
-    """
-    Computes display coordinates and edge metadata for the SFG.
 
-    Parameters
-    ----------
-    builder : GraphBuilder
-    """
 
     def __init__(self, builder: GraphBuilder) -> None:
         self.builder = builder

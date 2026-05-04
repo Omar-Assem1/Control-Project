@@ -1,13 +1,4 @@
-"""
-app/api/graph_router.py
------------------------
-FastAPI router for the Signal Flow Graph analysis endpoint.
 
-POST /api/graph/analyze
-  - Accepts GraphInput (nodes, branches, source, sink)
-  - Runs GraphBuilder → MasonSolver → GraphVisualizer
-  - Returns GraphAnalysisResult
-"""
 
 from fastapi import APIRouter, HTTPException, status
 
@@ -32,13 +23,7 @@ router = APIRouter(prefix="/api/graph", tags=["Signal Flow Graph"])
     ),
 )
 def analyze_graph(payload: GraphInput) -> GraphAnalysisResult:
-    """
-    Full pipeline:
-      1. Build the adjacency graph (GraphBuilder)
-      2. Apply Mason's formula  (MasonSolver)
-      3. Compute canvas layout  (GraphVisualizer)
-      4. Assemble and return    (GraphAnalysisResult)
-    """
+
     try:
         # ── 1. Build graph ────────────────────────────────────────────────
         branches = [

@@ -1,11 +1,4 @@
-"""
-app/models/graph.py
---------------------
-Pydantic v2 request and response models for the Signal Flow Graph API.
 
-Request  : GraphInput          – nodes, branches, source, sink
-Response : GraphAnalysisResult – everything the frontend needs
-"""
 
 from __future__ import annotations
 from typing import Any

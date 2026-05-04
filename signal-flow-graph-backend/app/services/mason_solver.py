@@ -1,24 +1,3 @@
-"""
-mason_solver.py
----------------
-Applies Mason's Gain Formula to compute:
-
-    T(s) = Σ_k [ P_k · Δ_k ] / Δ
-
-Where:
-    P_k  = gain of the k-th forward path
-    Δ    = graph determinant
-         = 1
-           − Σ (individual loop gains)
-           + Σ (products of gains of all 2 non-touching loops)
-           − Σ (products of gains of all 3 non-touching loops)
-           + …
-    Δ_k  = cofactor of the k-th forward path
-         = Δ computed for the sub-graph that does NOT touch path k
-
-Returns a rich result dict that the API layer can serialise directly.
-"""
-
 from __future__ import annotations
 from typing import Any
 import sympy as sp
@@ -29,13 +8,7 @@ from .loop_finder   import LoopFinder
 
 
 class MasonSolver:
-    """
-    Computes the overall transfer function via Mason's gain formula.
 
-    Parameters
-    ----------
-    builder : GraphBuilder
-    """
 
     def __init__(self, builder: GraphBuilder) -> None:
         self.builder     = builder
@@ -46,48 +19,38 @@ class MasonSolver:
     # ── public API ────────────────────────────────────────────────────────────
 
     def solve(self) -> dict:
-        """
-        Run Mason's formula and return a complete result dictionary.
-
-        Result schema
-        -------------
-        {
-            "forward_paths": [...],         # from PathFinder.summary()
-            "loops"        : [...],         # from LoopFinder.summary_loops()
-            "non_touching_groups": [...],   # from LoopFinder.summary_non_touching()
-            "delta"        : "...",         # Δ as string
-            "delta_k"      : [             # one entry per forward path
-                {"path_index": 1, "value": "..."},
-                ...
-            ],
-            "transfer_function" : "...",    # simplified T(s) as string
-            "transfer_function_latex": "...",
-        }
-        """
         if self._result is not None:
             return self._result
 
-        paths         = self.path_finder.find_forward_paths()
-        delta         = self._compute_delta(self.loop_finder)
-        delta_k_list  = self._compute_delta_k(paths)
-        tf            = self._compute_tf(paths, delta, delta_k_list)
+        paths = self.path_finder.find_forward_paths()
+        delta = self._compute_delta(self.loop_finder)
+        delta_k_list = self._compute_delta_k(paths)
+
+        # Calculate the numerator separately to access it below
+        numerator = sp.Integer(0)
+        for path, dk in zip(paths, delta_k_list):
+            numerator += path["gain"] * dk
+
+        # Compute the actual transfer function object
+        tf = numerator / delta
 
         self._result = {
-            "forward_paths"         : self.path_finder.summary(),
-            "loops"                 : self.loop_finder.summary_loops(),
-            "non_touching_groups"   : self.loop_finder.summary_non_touching(),
-            "delta"                 : str(sp.simplify(delta)),
-            "delta_latex"           : sp.latex(sp.simplify(delta)),
-            "delta_k"               : [
+            "forward_paths": self.path_finder.summary(),
+            "loops": self.loop_finder.summary_loops(),
+            "non_touching_groups": self.loop_finder.summary_non_touching(),
+            # No sp.simplify() — preserves the 1 - L1 - L2 + ... Mason structure
+            "delta": str(delta),
+            "delta_latex": sp.latex(delta),
+            "delta_k": [
                 {
-                    "path_index" : i + 1,
-                    "value"      : str(sp.simplify(dk)),
-                    "latex"      : sp.latex(sp.simplify(dk)),
+                    "path_index": i + 1,
+                    "value": str(dk),
+                    "latex": sp.latex(dk),
                 }
                 for i, dk in enumerate(delta_k_list)
             ],
-            "transfer_function"       : str(sp.simplify(tf)),
-            "transfer_function_latex" : sp.latex(sp.simplify(tf)),
+            "transfer_function": f"({numerator}) / ({delta})",
+            "transfer_function_latex": sp.latex(tf),
         }
         return self._result
 

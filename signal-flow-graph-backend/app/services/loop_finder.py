@@ -1,27 +1,3 @@
-"""
-loop_finder.py
---------------
-Finds:
-  1. All individual loops (simple cycles) in the SFG.
-  2. All combinations of 2, 3, … non-touching loops (loops that share no node).
-
-A *loop* is a closed path that returns to its starting node, visiting each
-intermediate node at most once, and has a non-trivial gain (length ≥ 1 branch).
-
-Result for each loop:
-    {
-        "nodes"    : [n1, n2, …, n1],   # first == last
-        "gain"     : sympy expression,
-        "gain_str" : str,
-    }
-
-Non-touching groups:
-    {
-        "loops"    : [loop_index, …],   # 0-based indices into loop list
-        "gain"     : sympy product of their gains,
-        "gain_str" : str,
-    }
-"""
 
 from __future__ import annotations
 from itertools import combinations
@@ -32,13 +8,6 @@ from .graph_builder import GraphBuilder
 
 
 class LoopFinder:
-    """
-    Enumerates every simple cycle and groups of mutually non-touching loops.
-
-    Parameters
-    ----------
-    builder : GraphBuilder
-    """
 
     def __init__(self, builder: GraphBuilder) -> None:
         self.builder = builder
@@ -48,10 +17,7 @@ class LoopFinder:
     # ── public API ────────────────────────────────────────────────────────────
 
     def find_loops(self) -> list[dict]:
-        """
-        Return every individual loop (simple cycle) in the graph.
-        Loops are deduplicated (rotations of the same cycle count once).
-        """
+
         if self._loops is not None:
             return self._loops
 
